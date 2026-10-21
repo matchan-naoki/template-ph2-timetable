@@ -1,29 +1,48 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TimetableEntryController;
 use App\Http\Controllers\TimetableController;
 use Illuminate\Support\Facades\Route;
 
+// 最初の画面
 Route::get('/', function () {
     return redirect('/entries');
 });
 
-// 時間割一覧
-Route::get('/timetable', [TimetableController::class, 'index']);
+// 新規登録
+Route::get('/register', [AuthController::class, 'showRegister']);
+Route::post('/register', [AuthController::class, 'register']);
 
-// 登録した授業の一覧
-Route::get('/entries', [TimetableEntryController::class, 'index']);
+// ログイン
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
 
-// 授業登録画面
-Route::get('/entries/create', [TimetableEntryController::class, 'create']);
+// ログアウト
+Route::post('/logout', [AuthController::class, 'logout']);
 
-// 授業登録
-Route::post('/entries', [TimetableEntryController::class, 'store']);
+// ログインしている人だけアクセスできる
+Route::middleware('auth')->group(function () {
 
-// 授業を1件削除
-Route::delete('/entries/{id}', [TimetableEntryController::class, 'destroy']);
+    // 時間割一覧
+    Route::get('/timetable', [TimetableController::class, 'index']);
 
-// 授業を全件削除
-Route::delete('/entries', [TimetableEntryController::class, 'destroyAll']);
+    // 登録した授業の一覧
+    Route::get('/entries', [TimetableEntryController::class, 'index']);
 
-Route::get('/entries/courses', [TimetableEntryController::class, 'courseList']);
+    // 授業登録画面
+    Route::get('/entries/create', [TimetableEntryController::class, 'create']);
+
+    // 授業登録
+    Route::post('/entries', [TimetableEntryController::class, 'store']);
+
+    // 授業を1件削除
+    Route::delete('/entries/{id}', [TimetableEntryController::class, 'destroy']);
+
+    // 授業を全件削除
+    Route::delete('/entries', [TimetableEntryController::class, 'destroyAll']);
+
+    // 授業一覧から選択
+    Route::get('/entries/courses', [TimetableEntryController::class, 'courseList']);
+
+});

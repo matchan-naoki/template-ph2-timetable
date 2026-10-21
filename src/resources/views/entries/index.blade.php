@@ -11,7 +11,25 @@
 
     <div class="max-w-5xl mx-auto">
 
-        <h1 class="text-3xl font-bold mb-6">自分の時間割</h1>
+        <div class="flex justify-between items-center mb-6">
+
+    <h1 class="text-3xl font-bold">
+        自分の時間割
+    </h1>
+
+    <form action="/logout" method="POST">
+        @csrf
+
+        <button
+            type="submit"
+            onclick="return confirm('ログアウトしますか？')"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+        >
+            ログアウト
+        </button>
+    </form>
+
+</div>
 
         <div class="flex justify-between items-center mb-6">
 
