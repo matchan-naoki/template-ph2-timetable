@@ -8,20 +8,20 @@ use Illuminate\Http\Request;
 
 class TimetableEntryController extends Controller
 {
-    // 授業一覧
-    public function index()
-    {
-        $entries = TimetableEntry::with('course')
-            ->join('courses', 'timetable_entries.course_id', '=', 'courses.id')
-            ->orderBy('courses.day')
-            ->orderBy('courses.period')
-            ->select('timetable_entries.*')
-            ->get();
+public function index()
+{
+    $entries = TimetableEntry::with('course')
+        ->where('user_id', auth()->id())
+        ->join('courses', 'timetable_entries.course_id', '=', 'courses.id')
+        ->orderBy('courses.day')
+        ->orderBy('courses.period')
+        ->select('timetable_entries.*')
+        ->get();
 
-        return view('entries.index', [
-            'entries' => $entries
-        ]);
-    }
+    return view('entries.index', [
+        'entries' => $entries
+    ]);
+}
 
 public function create()
 {
@@ -46,11 +46,11 @@ public function create()
 
         $course = Course::findOrFail($validated['course_id']);
 
-        // 同じ曜日・時限の授業が登録されているか確認
-        $exists = TimetableEntry::whereHas('course', function ($query) use ($course) {
-            $query->where('day', $course->day)
-                  ->where('period', $course->period);
-        })->exists();
+$exists = $request->user()->entries()
+    ->whereHas('course', function ($query) use ($course) {
+        $query->where('day', $course->day)
+              ->where('period', $course->period);
+    })->exists();
 
         // 重複していたら登録しない
         if ($exists) {
@@ -59,30 +59,28 @@ public function create()
             ])->withInput();
         }
 
-        // 重複していなければ登録
-        TimetableEntry::create([
-            'course_id' => $course->id,
-        ]);
+$request->user()->entries()->create([
+    'course_id' => $course->id,
+]);
 
         return redirect('/entries')->with('success', '授業を登録しました！');
     }
 
-    // 授業を1件削除
-    public function destroy($id)
-    {
-        $entry = TimetableEntry::findOrFail($id);
-        $entry->delete();
+public function destroy(Request $request, $id)
+{
+    $entry = $request->user()->entries()->findOrFail($id);
 
-        return redirect('/entries');
-    }
+    $entry->delete();
 
-    // 登録した授業を全件削除
-    public function destroyAll()
-    {
-        TimetableEntry::query()->delete();
+    return redirect('/entries');
+}
 
-        return redirect('/entries');
-    }
+public function destroyAll(Request $request)
+{
+    $request->user()->entries()->delete();
+
+    return redirect('/entries');
+}
 
     public function courseList()
 {
@@ -90,7 +88,10 @@ public function create()
         ->orderBy('period')
         ->get();
 
-    $registeredCourseIds = TimetableEntry::pluck('course_id')->toArray();
+$registeredCourseIds = auth()->user()
+    ->entries()
+    ->pluck('course_id')
+    ->toArray();
 
     return view('entries.course-list', [
         'courses' => $courses,
