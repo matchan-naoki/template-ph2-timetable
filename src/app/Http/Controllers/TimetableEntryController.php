@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Course;
 use App\Models\TimetableEntry;
 use Illuminate\Http\Request;
 
@@ -10,8 +11,11 @@ class TimetableEntryController extends Controller
     // 授業一覧
     public function index()
     {
-        $entries = TimetableEntry::orderBy('day')
-            ->orderBy('period')
+        $entries = TimetableEntry::with('course')
+            ->join('courses', 'timetable_entries.course_id', '=', 'courses.id')
+            ->orderBy('courses.day')
+            ->orderBy('courses.period')
+            ->select('timetable_entries.*')
             ->get();
 
         return view('entries.index', [
@@ -19,68 +23,78 @@ class TimetableEntryController extends Controller
         ]);
     }
 
-    // 登録画面
-    public function create()
-    {
-        return view('entries.create');
-    }
+public function create()
+{
+    $courses = Course::orderBy('day')
+        ->orderBy('period')
+        ->get();
 
-    // 新規登録
-    public function store()
+    $registeredCourseIds = TimetableEntry::pluck('course_id')->toArray();
+
+    return view('entries.create', [
+        'courses' => $courses,
+        'registeredCourseIds' => $registeredCourseIds,
+    ]);
+}
+
+    // 授業登録
+    public function store(Request $request)
     {
-        $data = request()->validate([
-            'day' => 'required|integer|between:1,5',
-            'period' => 'required|integer|between:1,5',
-            'name' => 'required|string|max:255',
-            'room' => 'required|string|max:255',
+        $validated = $request->validate([
+            'course_id' => 'required|exists:courses,id',
         ]);
 
-        TimetableEntry::create($data);
+        $course = Course::findOrFail($validated['course_id']);
 
-        return redirect('/entries');
-    }
+        // 同じ曜日・時限の授業が登録されているか確認
+        $exists = TimetableEntry::whereHas('course', function ($query) use ($course) {
+            $query->where('day', $course->day)
+                  ->where('period', $course->period);
+        })->exists();
 
-    // 編集画面
-    public function edit($id)
-    {
-        $entry = TimetableEntry::findOrFail($id);
+        // 重複していたら登録しない
+        if ($exists) {
+            return back()->withErrors([
+                'course_id' => 'この曜日・時限にはすでに授業が登録されています。',
+            ])->withInput();
+        }
 
-        return view('entries.edit', [
-            'entry' => $entry
-        ]);
-    }
-
-    // 編集内容を保存
-    public function update(Request $request, $id)
-    {
-        $entry = TimetableEntry::findOrFail($id);
-
-        $data = $request->validate([
-            'day' => 'required|integer|between:1,5',
-            'period' => 'required|integer|between:1,5',
-            'name' => 'required|string|max:255',
-            'room' => 'required|string|max:255',
+        // 重複していなければ登録
+        TimetableEntry::create([
+            'course_id' => $course->id,
         ]);
 
-        $entry->update($data);
-
-        return redirect('/entries');
+        return redirect('/entries')->with('success', '授業を登録しました！');
     }
 
-    // 授業を削除
+    // 授業を1件削除
     public function destroy($id)
     {
         $entry = TimetableEntry::findOrFail($id);
-
         $entry->delete();
 
         return redirect('/entries');
     }
 
+    // 登録した授業を全件削除
     public function destroyAll()
-{
-    TimetableEntry::query()->delete();
+    {
+        TimetableEntry::query()->delete();
 
-    return redirect('/entries');
+        return redirect('/entries');
+    }
+
+    public function courseList()
+{
+    $courses = Course::orderBy('day')
+        ->orderBy('period')
+        ->get();
+
+    $registeredCourseIds = TimetableEntry::pluck('course_id')->toArray();
+
+    return view('entries.course-list', [
+        'courses' => $courses,
+        'registeredCourseIds' => $registeredCourseIds,
+    ]);
 }
 }

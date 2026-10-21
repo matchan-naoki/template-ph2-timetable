@@ -4,57 +4,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>授業登録 | POSSE大学</title>
+    <title>授業を登録する | POSSE大学</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-8">
 
-    <div class="max-w-lg mx-auto bg-white p-8 rounded-lg shadow">
+<div class="max-w-3xl mx-auto bg-white p-8 rounded shadow">
 
-        <h1 class="text-2xl font-bold mb-6">授業を登録する</h1>
+    <h1 class="text-3xl font-bold mb-6">
+        授業を登録する
+    </h1>
 
-        <form action="/entries" method="POST">
-            @csrf
-
-            <label class="block mb-2">曜日</label>
-            <select name="day" class="w-full border p-2 mb-4">
-                <option value="1">月曜日</option>
-                <option value="2">火曜日</option>
-                <option value="3">水曜日</option>
-                <option value="4">木曜日</option>
-                <option value="5">金曜日</option>
-            </select>
-
-            <label class="block mb-2">時限</label>
-            <select name="period" class="w-full border p-2 mb-4">
-                <option value="1">1限</option>
-                <option value="2">2限</option>
-                <option value="3">3限</option>
-                <option value="4">4限</option>
-                <option value="5">5限</option>
-            </select>
-
-            <label class="block mb-2">授業名</label>
-            <input type="text" name="name"
-                   class="w-full border p-2 mb-4"
-                   placeholder="例：統計学" required>
-
-            <label class="block mb-2">教室</label>
-            <input type="text" name="room"
-                   class="w-full border p-2 mb-6"
-                   placeholder="例：J201" required>
-
-            <button type="submit"
-                    class="w-full bg-blue-500 text-white p-3 rounded">
-                登録する
-            </button>
-        </form>
-
-        <a href="/entries" class="block mt-4 text-blue-500">
-            ← 一覧に戻る
+    <div class="flex gap-3 mb-6">
+        <a href="/entries/create"
+           class="bg-blue-500 text-white px-4 py-2 rounded">
+            プルダウンから選ぶ
         </a>
 
+        <a href="/entries/courses"
+           class="bg-gray-200 px-4 py-2 rounded">
+            授業一覧から選ぶ
+        </a>
     </div>
+
+    @if ($errors->any())
+        <div class="bg-red-100 text-red-600 p-4 rounded mb-4">
+            @foreach ($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
+
+    <form action="/entries" method="POST">
+        @csrf
+
+        <label for="course_id" class="block font-bold mb-2">
+            登録する授業
+        </label>
+
+        <select name="course_id"
+                id="course_id"
+                class="w-full border rounded p-3 mb-5"
+                required>
+
+            <option value="">授業を選択してください</option>
+
+            @foreach ($courses as $course)
+                <option value="{{ $course->id }}"
+                    {{ old('course_id') == $course->id ? 'selected' : '' }}
+                    {{ in_array($course->id, $registeredCourseIds) ? 'disabled' : '' }}>
+
+                    {{ ['月', '火', '水', '木', '金'][$course->day - 1] }}
+                    {{ $course->period }}限：
+                    {{ $course->name }}
+                    （{{ $course->code }}）
+
+                </option>
+            @endforeach
+
+        </select>
+
+        <button type="submit"
+                class="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600">
+            登録する
+        </button>
+    </form>
+
+    <a href="/entries"
+       class="inline-block mt-6 text-blue-600 underline">
+        ← 自分の時間割に戻る
+    </a>
+
+</div>
 
 </body>
 </html>

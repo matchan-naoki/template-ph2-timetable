@@ -9,34 +9,33 @@
 </head>
 <body class="bg-gray-100 p-8">
 
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-5xl mx-auto">
 
         <h1 class="text-3xl font-bold mb-6">自分の時間割</h1>
 
-<div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-6">
 
-    <!-- 授業登録ボタン -->
-    <a href="/entries/create"
-       class="inline-block bg-blue-500 text-white px-4 py-2 rounded">
-        ＋ 授業を登録する
-    </a>
+            <!-- 授業登録ボタン -->
+            <a href="/entries/create"
+               class="inline-block bg-blue-500 text-white px-4 py-2 rounded">
+                ＋ 授業を登録する
+            </a>
 
-    <!-- 全削除ボタン -->
-    @if($entries->isNotEmpty())
-        <form action="/entries" method="POST">
-            @csrf
-            @method('DELETE')
+            <!-- 全削除ボタン -->
+            @if($entries->isNotEmpty())
+                <form action="/entries" method="POST">
+                    @csrf
+                    @method('DELETE')
 
-            <button type="submit"
-                    onclick="return confirm('本当にすべての授業を削除しますか？この操作は取り消せません。')"
-                    class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
-                全削除
-            </button>
-        </form>
-    @endif
+                    <button type="submit"
+                            onclick="return confirm('本当にすべての授業を削除しますか？この操作は取り消せません。')"
+                            class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
+                        全削除
+                    </button>
+                </form>
+            @endif
 
-</div>
-
+        </div>
 
         @if($entries->isEmpty())
             <p class="bg-white p-6 rounded">
@@ -49,38 +48,44 @@
                         <th class="border p-3">曜日</th>
                         <th class="border p-3">時限</th>
                         <th class="border p-3">授業名</th>
+                        <th class="border p-3">担当教員</th>
                         <th class="border p-3">教室</th>
                         <th class="border p-3">操作</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @foreach($entries as $entry)
                         <tr>
+                            <!-- 曜日 -->
                             <td class="border p-3 text-center">
-                                {{ ['月', '火', '水', '木', '金'][$entry->day - 1] }}
+                                {{ ['月', '火', '水', '木', '金'][$entry->course->day - 1] }}
                             </td>
 
+                            <!-- 時限 -->
                             <td class="border p-3 text-center">
-                                {{ $entry->period }}限
+                                {{ $entry->course->period }}限
                             </td>
 
+                            <!-- 授業名 -->
                             <td class="border p-3">
-                                {{ $entry->name }}
+                                {{ $entry->course->name }}
                             </td>
 
+                            <!-- 担当教員 -->
                             <td class="border p-3 text-center">
-                                {{ $entry->room ?? '教室未定' }}
+                                {{ $entry->course->teacher ?? '未定' }}
                             </td>
 
+                            <!-- 教室 -->
                             <td class="border p-3 text-center">
-                                <a href="/entries/{{ $entry->id }}/edit"
-                                   class="inline-block bg-blue-500 text-white px-3 py-1 rounded">
-                                    編集
-                                </a>
+                                {{ $entry->course->room ?? '教室未定' }}
+                            </td>
 
+                            <!-- 削除ボタン -->
+                            <td class="border p-3 text-center">
                                 <form action="/entries/{{ $entry->id }}"
-                                      method="POST"
-                                      class="inline-block">
+                                      method="POST">
                                     @csrf
                                     @method('DELETE')
 
@@ -97,9 +102,9 @@
             </table>
         @endif
 
-        
     </div>
 
 </body>
 </html>
+
 
