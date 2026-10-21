@@ -57,3 +57,10 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## W7：アプリの起動方法
+
+1. Docker Desktopを起動する
+2. docker compose up -d --build
+3. docker compose exec app composer install
+4. docker compose exec app php artisan migrate
+5. http://localhost:8080/login にアクセスする
