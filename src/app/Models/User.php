@@ -53,5 +53,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(TimetableEntry::class);
     }
-}
 
+    // このユーザーがお気に入り登録した授業の情報を取得
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
+}
