@@ -6,6 +6,7 @@ use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FavoriteController;
 
 // 最初の画面
 Route::get('/', function () {
@@ -58,5 +59,11 @@ Route::middleware('auth')->group(function () {
         // レビュー削除
 Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
     ->name('reviews.destroy');
+
+    // お気に入り登録・解除（ログイン必須）
+Route::middleware('auth')->group(function () {
+    Route::post('/courses/{course}/favorite', [FavoriteController::class, 'toggle'])
+        ->name('courses.favorite');
+});
 
 });

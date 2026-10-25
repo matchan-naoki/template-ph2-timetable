@@ -4,38 +4,50 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\TimetableEntry;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class TimetableEntryController extends Controller
 {
-public function index()
-{
-    $entries = TimetableEntry::with('course')
-        ->where('user_id', auth()->id())
-        ->join('courses', 'timetable_entries.course_id', '=', 'courses.id')
-        ->orderBy('courses.day')
-        ->orderBy('courses.period')
-        ->select('timetable_entries.*')
-        ->get();
+    // 自分の時間割一覧
+    public function index()
+    {
+        $entries = TimetableEntry::with([
+            'course' => function ($query) {
+                // 授業ごとの履修人数を取得
+                $query->withCount('timetableEntries');
+            }
+        ])
+            ->where('user_id', auth()->id())
+            ->join('courses', 'timetable_entries.course_id', '=', 'courses.id')
+            ->orderBy('courses.day')
+            ->orderBy('courses.period')
+            ->select('timetable_entries.*')
+            ->get();
 
-    return view('entries.index', [
-        'entries' => $entries
-    ]);
-}
+        return view('entries.index', [
+            'entries' => $entries,
+        ]);
+    }
 
-public function create()
-{
-    $courses = Course::orderBy('day')
-        ->orderBy('period')
-        ->get();
+    // 授業登録画面（プルダウン形式）
+    public function create()
+    {
+        $courses = Course::orderBy('day')
+            ->orderBy('period')
+            ->get();
 
-    $registeredCourseIds = TimetableEntry::pluck('course_id')->toArray();
+        // 自分が登録している授業だけを取得
+        $registeredCourseIds = auth()->user()
+            ->entries()
+            ->pluck('course_id')
+            ->toArray();
 
-    return view('entries.create', [
-        'courses' => $courses,
-        'registeredCourseIds' => $registeredCourseIds,
-    ]);
-}
+        return view('entries.create', [
+            'courses' => $courses,
+            'registeredCourseIds' => $registeredCourseIds,
+        ]);
+    }
 
     // 授業登録
     public function store(Request $request)
@@ -46,11 +58,14 @@ public function create()
 
         $course = Course::findOrFail($validated['course_id']);
 
-$exists = $request->user()->entries()
-    ->whereHas('course', function ($query) use ($course) {
-        $query->where('day', $course->day)
-              ->where('period', $course->period);
-    })->exists();
+        // 同じ曜日・時限に授業が登録されていないか確認
+        $exists = $request->user()
+            ->entries()
+            ->whereHas('course', function ($query) use ($course) {
+                $query->where('day', $course->day)
+                    ->where('period', $course->period);
+            })
+            ->exists();
 
         // 重複していたら登録しない
         if ($exists) {
@@ -59,61 +74,91 @@ $exists = $request->user()->entries()
             ])->withInput();
         }
 
-$request->user()->entries()->create([
-    'course_id' => $course->id,
-]);
+        // 授業を登録
+        $request->user()->entries()->create([
+            'course_id' => $course->id,
+        ]);
 
-        return redirect('/entries')->with('success', '授業を登録しました！');
+        return redirect('/entries')
+            ->with('success', '授業を登録しました！');
     }
 
-public function destroy(Request $request, $id)
-{
-    $entry = $request->user()->entries()->findOrFail($id);
+    // 授業を1件削除
+    public function destroy(Request $request, $id)
+    {
+        $entry = $request->user()
+            ->entries()
+            ->findOrFail($id);
 
-    $entry->delete();
+        $entry->delete();
 
-    return redirect('/entries');
-}
-
-public function destroyAll(Request $request)
-{
-    $request->user()->entries()->delete();
-
-    return redirect('/entries');
-}
-
-public function courseList(Request $request)
-{
-    // 検索欄に入力された文字を取得
-    $q = trim($request->query('q', ''));
-
-    // 授業データを取得する準備
-    $query = Course::query();
-
-    // 検索文字が入力されている場合
-    if ($q !== '') {
-        $query->where(function ($query) use ($q) {
-            $query->where('name', 'LIKE', "%{$q}%")
-                  ->orWhere('teacher', 'LIKE', "%{$q}%");
-        });
+        return redirect('/entries');
     }
 
-    // 曜日・時限順に並べる
-    $courses = $query->orderBy('day')
-        ->orderBy('period')
-        ->get();
+    // 登録した授業をすべて削除
+    public function destroyAll(Request $request)
+    {
+        $request->user()->entries()->delete();
 
-    // ログイン中のユーザーが登録した授業
-    $registeredCourseIds = $request->user()
-        ->entries()
-        ->pluck('course_id')
-        ->toArray();
+        return redirect('/entries');
+    }
 
-    // 授業一覧ページにデータを渡す
-    return view('entries.course-list', [
-        'courses' => $courses,
-        'registeredCourseIds' => $registeredCourseIds,
-        'q' => $q,
-    ]);
-}
+    // 授業一覧から選ぶ画面
+    public function courseList(Request $request)
+    {
+        // 検索キーワード
+        $q = $request->query('q', '');
+
+        // 選択されたタグID
+        $tagId = $request->query('tag');
+
+        // タグ一覧を取得
+        $tags = Tag::orderBy('id')->get();
+
+        // 授業・タグ・お気に入り数を取得
+        $query = Course::with('tags')
+            ->withCount('favorites');
+
+        // 授業名・担当教員名で検索
+        if ($q !== '') {
+            $query->where(function ($builder) use ($q) {
+                $builder->where('name', 'LIKE', "%{$q}%")
+                    ->orWhere('teacher', 'LIKE', "%{$q}%");
+            });
+        }
+
+        // タグで絞り込み
+        if ($tagId) {
+            $query->whereHas('tags', function ($builder) use ($tagId) {
+                $builder->where('tags.id', $tagId);
+            });
+        }
+
+        // 曜日・時限順に並べる
+        $courses = $query
+            ->orderBy('day')
+            ->orderBy('period')
+            ->get();
+
+        // 自分が登録済みの授業ID
+        $registeredCourseIds = $request->user()
+            ->entries()
+            ->pluck('course_id')
+            ->toArray();
+
+        // 自分がお気に入り登録した授業ID
+        $favoriteCourseIds = $request->user()
+            ->favorites()
+            ->pluck('course_id')
+            ->toArray();
+
+        return view('entries.course-list', [
+            'courses' => $courses,
+            'registeredCourseIds' => $registeredCourseIds,
+            'favoriteCourseIds' => $favoriteCourseIds,
+            'tags' => $tags,
+            'tagId' => $tagId,
+            'q' => $q,
+        ]);
+    }
 }

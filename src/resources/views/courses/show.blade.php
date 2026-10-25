@@ -12,7 +12,8 @@
     <div class="max-w-3xl mx-auto">
 
         <!-- 戻るボタン -->
-        <a href="/entries/courses" class="text-blue-600 hover:underline">
+        <a href="/entries/courses"
+           class="text-blue-600 hover:underline">
             ← 授業一覧に戻る
         </a>
 
@@ -23,11 +24,80 @@
                 {{ $course->name }}
             </h1>
 
-            <p>授業コード：{{ $course->code }}</p>
-            <p>担当教員：{{ $course->teacher }}</p>
-            <p>教室：{{ $course->room ?? '未定' }}</p>
+            <p class="mb-2">
+                授業コード：{{ $course->code }}
+            </p>
+
+            <p class="mb-2">
+                担当教員：{{ $course->teacher }}
+            </p>
+
+            <p class="mb-2">
+                教室：{{ $course->room ?? '未定' }}
+            </p>
+
+            <!-- タグ一覧 -->
+            <div class="flex flex-wrap gap-2 mt-4">
+
+                @foreach($course->tags as $tag)
+
+                    <a href="{{ url('/entries/courses') }}?tag={{ $tag->id }}"
+                       class="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full hover:bg-blue-200">
+
+                        🏷️ {{ $tag->name }}
+
+                    </a>
+
+                @endforeach
+
+            </div>
 
         </div>
+
+
+        <!-- 履修者一覧 -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+
+            <h2 class="text-2xl font-bold mb-4">
+                👥 履修者一覧（{{ $studentCount }}人）
+            </h2>
+
+            @if($students->isEmpty())
+
+                <p class="text-gray-500">
+                    まだ履修者はいません。
+                </p>
+
+            @else
+
+                <div class="space-y-3">
+
+                    @foreach($students as $student)
+
+                        <div class="flex items-center gap-3 border-b pb-3">
+
+                            <!-- アイコン -->
+                            <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
+
+                                {{ mb_substr($student->name, 0, 1) }}
+
+                            </div>
+
+                            <!-- 学生名 -->
+                            <p class="font-bold">
+                                {{ $student->name }}
+                            </p>
+
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+            @endif
+
+        </div>
+
 
         <!-- レビュー投稿 -->
         <div class="bg-white p-6 rounded-lg shadow mb-6">
@@ -38,21 +108,31 @@
 
             <!-- 投稿成功メッセージ -->
             @if(session('success'))
+
                 <p class="bg-green-100 text-green-700 p-3 rounded mb-4">
                     {{ session('success') }}
                 </p>
+
             @endif
 
             <!-- エラーメッセージ -->
             @if($errors->any())
+
                 <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+
                     @foreach($errors->all() as $error)
+
                         <p>{{ $error }}</p>
+
                     @endforeach
+
                 </div>
+
             @endif
 
-            <form action="{{ route('reviews.store', $course->id) }}" method="POST">
+            <!-- レビュー投稿フォーム -->
+            <form action="{{ route('reviews.store', $course->id) }}"
+                  method="POST">
 
                 @csrf
 
@@ -65,12 +145,19 @@
                         class="w-full border rounded p-3 mb-4"
                         required>
 
-                    <option value="">評価を選択してください</option>
+                    <option value="">
+                        評価を選択してください
+                    </option>
 
                     @for($i = 5; $i >= 1; $i--)
-                        <option value="{{ $i }}" {{ old('rating') == $i ? 'selected' : '' }}>
+
+                        <option value="{{ $i }}"
+                                {{ old('rating') == $i ? 'selected' : '' }}>
+
                             {{ $i }} ★
+
                         </option>
+
                     @endfor
 
                 </select>
@@ -90,12 +177,15 @@
                 <!-- 投稿ボタン -->
                 <button type="submit"
                         class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg">
+
                     レビューを投稿する
+
                 </button>
 
             </form>
 
         </div>
+
 
         <!-- レビュー一覧 -->
         <div class="bg-white p-6 rounded-lg shadow">
@@ -110,10 +200,12 @@
 
                     <div class="flex justify-between items-center mb-2">
 
+                        <!-- 投稿者 -->
                         <p class="font-bold">
                             {{ $review->user->name ?? '不明なユーザー' }}
                         </p>
 
+                        <!-- 星評価 -->
                         <p class="text-yellow-500">
                             {{ str_repeat('★', $review->rating) }}
                             {{ str_repeat('☆', 5 - $review->rating) }}
@@ -121,35 +213,37 @@
 
                     </div>
 
+                    <!-- コメント -->
                     <p class="text-gray-700 whitespace-pre-wrap">
                         {{ $review->comment }}
                     </p>
 
+                    <!-- 投稿日 -->
                     <p class="text-gray-400 text-sm mt-2">
                         投稿日：{{ $review->created_at->format('Y/m/d H:i') }}
                     </p>
 
-                    <!-- 自分のレビューだけ削除ボタンを表示 -->
-@if($review->user_id === auth()->id())
+                    <!-- 自分のレビューだけ削除可能 -->
+                    @if($review->user_id === auth()->id())
 
-    <form action="{{ route('reviews.destroy', $review->id) }}"
-          method="POST"
-          class="mt-3 text-right">
+                        <form action="{{ route('reviews.destroy', $review->id) }}"
+                              method="POST"
+                              class="mt-3 text-right">
 
-        @csrf
-        @method('DELETE')
+                            @csrf
+                            @method('DELETE')
 
-        <button type="submit"
-                onclick="return confirm('このレビューを削除しますか？')"
-                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
+                            <button type="submit"
+                                    onclick="return confirm('このレビューを削除しますか？')"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
 
-            削除
+                                削除
 
-        </button>
+                            </button>
 
-    </form>
+                        </form>
 
-@endif
+                    @endif
 
                 </div>
 
