@@ -13,4 +13,10 @@ class Course extends Model
     {
         return $this->hasMany(TimetableEntry::class);
     }
+
+    // 授業に投稿されたレビューを取得する
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }

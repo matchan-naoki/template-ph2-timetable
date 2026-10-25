@@ -82,20 +82,38 @@ public function destroyAll(Request $request)
     return redirect('/entries');
 }
 
-    public function courseList()
+public function courseList(Request $request)
 {
-    $courses = Course::orderBy('day')
+    // 検索欄に入力された文字を取得
+    $q = trim($request->query('q', ''));
+
+    // 授業データを取得する準備
+    $query = Course::query();
+
+    // 検索文字が入力されている場合
+    if ($q !== '') {
+        $query->where(function ($query) use ($q) {
+            $query->where('name', 'LIKE', "%{$q}%")
+                  ->orWhere('teacher', 'LIKE', "%{$q}%");
+        });
+    }
+
+    // 曜日・時限順に並べる
+    $courses = $query->orderBy('day')
         ->orderBy('period')
         ->get();
 
-$registeredCourseIds = auth()->user()
-    ->entries()
-    ->pluck('course_id')
-    ->toArray();
+    // ログイン中のユーザーが登録した授業
+    $registeredCourseIds = $request->user()
+        ->entries()
+        ->pluck('course_id')
+        ->toArray();
 
+    // 授業一覧ページにデータを渡す
     return view('entries.course-list', [
         'courses' => $courses,
         'registeredCourseIds' => $registeredCourseIds,
+        'q' => $q,
     ]);
 }
 }

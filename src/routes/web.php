@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TimetableEntryController;
 use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\CourseController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 // 最初の画面
@@ -44,5 +46,17 @@ Route::middleware('auth')->group(function () {
 
     // 授業一覧から選択
     Route::get('/entries/courses', [TimetableEntryController::class, 'courseList']);
+
+    // 授業詳細ページ
+    Route::get('/courses/{course}', [CourseController::class, 'show'])
+        ->name('courses.show');
+
+    // レビュー投稿
+    Route::post('/courses/{course}/reviews', [ReviewController::class, 'store'])
+        ->name('reviews.store');
+
+        // レビュー削除
+Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
+    ->name('reviews.destroy');
 
 });

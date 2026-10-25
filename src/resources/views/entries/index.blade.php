@@ -86,9 +86,12 @@
                             </td>
 
                             <!-- 授業名 -->
-                            <td class="border p-3">
-                                {{ $entry->course->name }}
-                            </td>
+<td class="border p-3">
+    <a href="{{ route('courses.show', $entry->course_id) }}"
+       class="text-blue-600 font-bold hover:underline">
+        {{ $entry->course->name }}
+    </a>
+</td>
 
                             <!-- 担当教員 -->
                             <td class="border p-3 text-center">

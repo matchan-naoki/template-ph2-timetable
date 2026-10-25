@@ -35,6 +35,31 @@
         </div>
     @endif
 
+    <!-- 授業検索フォーム -->
+<form action="/entries/courses" method="GET"
+      class="flex gap-3 mb-6">
+
+    <input
+        type="text"
+        name="q"
+        value="{{ $q }}"
+        placeholder="授業名・担当教員名で検索"
+        class="flex-1 border border-gray-300 rounded px-4 py-2"
+    >
+
+    <button
+        type="submit"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded">
+        🔍 検索
+    </button>
+
+    <a href="/entries/courses"
+       class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+        クリア
+    </a>
+
+</form>
+
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-center">
             <thead class="bg-blue-100">
@@ -64,9 +89,12 @@
                             {{ $course->code }}
                         </td>
 
-                        <td class="border p-3 text-left">
-                            {{ $course->name }}
-                        </td>
+<td class="border p-3 text-left">
+    <a href="{{ route('courses.show', $course->id) }}"
+       class="text-blue-600 font-bold hover:underline">
+        {{ $course->name }}
+    </a>
+</td>
 
                         <td class="border p-3">
                             {{ $course->teacher }}
