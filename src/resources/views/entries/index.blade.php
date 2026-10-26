@@ -31,37 +31,52 @@
 
         </div>
 
-        <!-- 授業登録・全削除 -->
-        <div class="flex justify-between items-center mb-6">
+<!-- 履修申請・管理者ボタン・全削除 -->
+<div class="flex justify-between items-center mb-6">
 
-            <a href="/entries/create"
-               class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                ＋ 授業を登録する
+    <!-- 左側のボタン -->
+    <div class="flex items-center gap-3">
+
+        <!-- 履修申請ボタン -->
+        <a href="/entries/create"
+           class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+            ＋ 履修申請する
+        </a>
+
+        <!-- 管理者だけに表示するボタン -->
+        @can('access-admin')
+            <a href="{{ route('admin.entries') }}"
+               class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded shadow">
+                👑 履修申請を管理する
             </a>
+        @endcan
 
-            @if($entries->isNotEmpty())
+    </div>
 
-                <form action="/entries" method="POST">
-                    @csrf
-                    @method('DELETE')
+    <!-- 全削除ボタン -->
+    @if($entries->isNotEmpty())
 
-                    <button
-                        type="submit"
-                        onclick="return confirm('本当にすべての授業を削除しますか？この操作は取り消せません。')"
-                        class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
-                        全削除
-                    </button>
-                </form>
+        <form action="/entries" method="POST">
+            @csrf
+            @method('DELETE')
 
-            @endif
+            <button
+                type="submit"
+                onclick="return confirm('本当にすべての履修申請を削除しますか？この操作は取り消せません。')"
+                class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
+                全削除
+            </button>
+        </form>
 
-        </div>
+    @endif
+
+</div>
 
         <!-- 登録件数 -->
         <div class="bg-white p-4 rounded-lg shadow mb-6">
 
             <p class="text-gray-600">
-                登録している授業
+                履修申請している授業
             </p>
 
             <p class="text-2xl font-bold text-blue-600">
@@ -83,7 +98,7 @@
         @if($entries->isEmpty())
 
             <p class="bg-white p-6 rounded shadow">
-                まだ授業が登録されていません
+                まだ履修申請している授業がありません
             </p>
 
         @else
@@ -100,10 +115,8 @@
                             <th class="border p-3">授業名</th>
                             <th class="border p-3">担当教員</th>
                             <th class="border p-3">教室</th>
-
-                            <!-- 新しく追加 -->
                             <th class="border p-3">履修人数</th>
-
+                            <th class="border p-3">申請状況</th>
                             <th class="border p-3">操作</th>
 
                         </tr>
@@ -159,6 +172,37 @@
 
                                 </td>
 
+                                <!-- 申請状況 -->
+                                <td class="border p-3 text-center">
+
+                                    @if($entry->status === 'pending')
+
+                                        <span class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
+                                            🟡 申請中
+                                        </span>
+
+                                    @elseif($entry->status === 'approved')
+
+                                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
+                                            🟢 承認済み
+                                        </span>
+
+                                    @elseif($entry->status === 'rejected')
+
+                                        <span class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
+                                            🔴 却下
+                                        </span>
+
+                                    @else
+
+                                        <span class="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-bold whitespace-nowrap">
+                                            状態不明
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
                                 <!-- 削除ボタン -->
                                 <td class="border p-3 text-center">
 
@@ -170,7 +214,7 @@
 
                                         <button
                                             type="submit"
-                                            onclick="return confirm('この授業を削除しますか？')"
+                                            onclick="return confirm('この履修申請を削除しますか？')"
                                             class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
 
                                             削除

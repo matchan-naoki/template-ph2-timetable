@@ -5,8 +5,9 @@ use App\Http\Controllers\TimetableEntryController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ReviewController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\Admin\EntryApprovalController;
+use Illuminate\Support\Facades\Route;
 
 // 最初の画面
 Route::get('/', function () {
@@ -56,14 +57,29 @@ Route::middleware('auth')->group(function () {
     Route::post('/courses/{course}/reviews', [ReviewController::class, 'store'])
         ->name('reviews.store');
 
-        // レビュー削除
-Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
-    ->name('reviews.destroy');
+    // レビュー削除
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
+        ->name('reviews.destroy');
 
-    // お気に入り登録・解除（ログイン必須）
-Route::middleware('auth')->group(function () {
+    // お気に入り登録・解除
     Route::post('/courses/{course}/favorite', [FavoriteController::class, 'toggle'])
         ->name('courses.favorite');
+
+// 管理者専用：履修申請管理
+Route::middleware('can:access-admin')->group(function () {
+
+    // 履修申請一覧
+    Route::get('/admin/entries', [EntryApprovalController::class, 'index'])
+        ->name('admin.entries');
+
+    // 履修申請を承認
+    Route::post('/admin/entries/{entry}/approve', [EntryApprovalController::class, 'approve'])
+        ->name('admin.entries.approve');
+
+    // 履修申請を却下
+    Route::post('/admin/entries/{entry}/reject', [EntryApprovalController::class, 'reject'])
+        ->name('admin.entries.reject');
+
 });
 
 });
