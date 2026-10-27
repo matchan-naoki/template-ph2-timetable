@@ -11,17 +11,27 @@ class TimetableEntry extends Model
         'day',
         'period',
         'course_id',
+        'status',
+        'decided_at',
     ];
 
-    // この時間割に登録されている授業を取得
+    // 登録されている授業
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
-    // この時間割を登録したユーザーを取得
+    // 申請したユーザー
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    // 承認・却下日時を日付として扱う
+    protected function casts(): array
+    {
+        return [
+            'decided_at' => 'datetime',
+        ];
     }
 }

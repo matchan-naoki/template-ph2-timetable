@@ -15,7 +15,11 @@ class TimetableEntryController extends Controller
         $entries = TimetableEntry::with([
             'course' => function ($query) {
                 // 授業ごとの履修人数を取得
-                $query->withCount('timetableEntries');
+                $query->withCount([
+    'timetableEntries' => function ($query) {
+        $query->where('status', 'approved');
+    }
+]);
             }
         ])
             ->where('user_id', auth()->id())
@@ -38,10 +42,11 @@ class TimetableEntryController extends Controller
             ->get();
 
         // 自分が登録している授業だけを取得
-        $registeredCourseIds = auth()->user()
-            ->entries()
-            ->pluck('course_id')
-            ->toArray();
+$registeredCourseIds = auth()->user()
+    ->entries()
+    ->whereIn('status', ['pending', 'approved'])
+    ->pluck('course_id')
+    ->toArray();
 
         return view('entries.create', [
             'courses' => $courses,
@@ -58,14 +63,14 @@ class TimetableEntryController extends Controller
 
         $course = Course::findOrFail($validated['course_id']);
 
-        // 同じ曜日・時限に授業が登録されていないか確認
-        $exists = $request->user()
-            ->entries()
-            ->whereHas('course', function ($query) use ($course) {
-                $query->where('day', $course->day)
-                    ->where('period', $course->period);
-            })
-            ->exists();
+$exists = $request->user()
+    ->entries()
+    ->whereIn('status', ['pending', 'approved'])
+    ->whereHas('course', function ($query) use ($course) {
+        $query->where('day', $course->day)
+            ->where('period', $course->period);
+    })
+    ->exists();
 
         // 重複していたら登録しない
         if ($exists) {
@@ -75,12 +80,14 @@ class TimetableEntryController extends Controller
         }
 
         // 授業を登録
-        $request->user()->entries()->create([
-            'course_id' => $course->id,
-        ]);
+$request->user()->entries()->create([
+    'course_id' => $course->id,
+    'status' => 'pending',
+]);
 
-        return redirect('/entries')
-            ->with('success', '授業を登録しました！');
+
+return redirect('/entries')
+    ->with('success', '履修申請を受け付けました！');
     }
 
     // 授業を1件削除
@@ -147,10 +154,11 @@ class TimetableEntryController extends Controller
             ->toArray();
 
         // 自分がお気に入り登録した授業ID
-        $favoriteCourseIds = $request->user()
-            ->favorites()
-            ->pluck('course_id')
-            ->toArray();
+// 自分がお気に入り登録した授業ID
+$favoriteCourseIds = $request->user()
+    ->favorites()
+    ->pluck('course_id')
+    ->toArray();
 
         return view('entries.course-list', [
             'courses' => $courses,
