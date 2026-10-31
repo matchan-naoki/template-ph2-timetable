@@ -89,7 +89,7 @@ class TimetableEntryController extends Controller
 
         $exists = $request->user()
             ->entries()
-            ->whereIn('status', ['pending', 'approved'])
+->whereIn('status', ['pending', 'approved', 'rejected'])
             ->whereHas('course', function ($query) use ($course) {
                 $query->where('day', $course->day)
                     ->where('period', $course->period);
