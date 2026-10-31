@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\TimetableEntry;
 use App\Models\Tag;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 
 class TimetableEntryController extends Controller
@@ -14,12 +15,12 @@ class TimetableEntryController extends Controller
     {
         $entries = TimetableEntry::with([
             'course' => function ($query) {
-                // 授業ごとの履修人数を取得
+                // 授業ごとの承認済み履修人数を取得
                 $query->withCount([
-    'timetableEntries' => function ($query) {
-        $query->where('status', 'approved');
-    }
-]);
+                    'timetableEntries' => function ($query) {
+                        $query->where('status', 'approved');
+                    }
+                ]);
             }
         ])
             ->where('user_id', auth()->id())
@@ -29,8 +30,31 @@ class TimetableEntryController extends Controller
             ->select('timetable_entries.*')
             ->get();
 
+        // ========================================
+        // 追加：授業からのお知らせを取得
+        // ========================================
+
+        // 自分が履修承認された授業IDだけ取得
+        $approvedCourseIds = auth()->user()
+            ->entries()
+            ->where('status', 'approved')
+            ->pluck('course_id');
+
+        // 承認済み授業の過去30日間のお知らせを取得
+        $announcements = Announcement::whereIn(
+            'course_id',
+            $approvedCourseIds
+        )
+            ->where('created_at', '>=', now()->subDays(30))
+            ->with(['course', 'user'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
+
+        // 時間割とお知らせをBladeに渡す
         return view('entries.index', [
             'entries' => $entries,
+            'announcements' => $announcements,
         ]);
     }
 
@@ -42,11 +66,11 @@ class TimetableEntryController extends Controller
             ->get();
 
         // 自分が登録している授業だけを取得
-$registeredCourseIds = auth()->user()
-    ->entries()
-    ->whereIn('status', ['pending', 'approved'])
-    ->pluck('course_id')
-    ->toArray();
+        $registeredCourseIds = auth()->user()
+            ->entries()
+            ->whereIn('status', ['pending', 'approved'])
+            ->pluck('course_id')
+            ->toArray();
 
         return view('entries.create', [
             'courses' => $courses,
@@ -63,14 +87,14 @@ $registeredCourseIds = auth()->user()
 
         $course = Course::findOrFail($validated['course_id']);
 
-$exists = $request->user()
-    ->entries()
-    ->whereIn('status', ['pending', 'approved'])
-    ->whereHas('course', function ($query) use ($course) {
-        $query->where('day', $course->day)
-            ->where('period', $course->period);
-    })
-    ->exists();
+        $exists = $request->user()
+            ->entries()
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereHas('course', function ($query) use ($course) {
+                $query->where('day', $course->day)
+                    ->where('period', $course->period);
+            })
+            ->exists();
 
         // 重複していたら登録しない
         if ($exists) {
@@ -80,14 +104,13 @@ $exists = $request->user()
         }
 
         // 授業を登録
-$request->user()->entries()->create([
-    'course_id' => $course->id,
-    'status' => 'pending',
-]);
+        $request->user()->entries()->create([
+            'course_id' => $course->id,
+            'status' => 'pending',
+        ]);
 
-
-return redirect('/entries')
-    ->with('success', '履修申請を受け付けました！');
+        return redirect('/entries')
+            ->with('success', '履修申請を受け付けました！');
     }
 
     // 授業を1件削除
@@ -154,11 +177,10 @@ return redirect('/entries')
             ->toArray();
 
         // 自分がお気に入り登録した授業ID
-// 自分がお気に入り登録した授業ID
-$favoriteCourseIds = $request->user()
-    ->favorites()
-    ->pluck('course_id')
-    ->toArray();
+        $favoriteCourseIds = $request->user()
+            ->favorites()
+            ->pluck('course_id')
+            ->toArray();
 
         return view('entries.course-list', [
             'courses' => $courses,

@@ -1,7 +1,9 @@
 # POSSE大学 時間割アプリの開発環境
-#   web : nginx（ブラウザからのリクエストを受ける） http://localhost:8080
-#   app : PHP-FPM（Laravel を動かす）
-#   db  : PostgreSQL（授業データを保存する）
+#   web     : nginx（ブラウザからのリクエストを受ける）
+#   app     : PHP-FPM（Laravel を動かす）
+#   db      : PostgreSQL（授業データを保存する）
+#   mailpit : テストメールを受信する
+
 services:
   web:
     image: nginx:1.29-alpine
@@ -30,10 +32,18 @@ services:
       POSTGRES_PASSWORD: password
       TZ: Asia/Tokyo
     volumes:
-      # データを残すための名前付きボリューム（PostgreSQL 18 からは /var/lib/postgresql に置く）
+      # データを残すための名前付きボリューム
       - db-data:/var/lib/postgresql
-      # 初回起動時（ボリュームが空のとき）だけ、このフォルダの .sql が順に実行される
+      # 初回起動時だけSQLを実行
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+
+  # Week11で追加
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+    expose:
+      - "1025"
 
 volumes:
   db-data:

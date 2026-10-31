@@ -7,6 +7,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\Admin\EntryApprovalController;
+use App\Http\Controllers\AnnouncementController; 
 use Illuminate\Support\Facades\Route;
 
 // 最初の画面
@@ -79,6 +80,14 @@ Route::middleware('can:access-admin')->group(function () {
     // 履修申請を却下
     Route::post('/admin/entries/{entry}/reject', [EntryApprovalController::class, 'reject'])
         ->name('admin.entries.reject');
+
+    // お知らせの投稿内容を確認
+Route::post('/courses/{course}/announcements/confirm', [AnnouncementController::class, 'confirm'])
+    ->name('announcements.confirm');
+
+// お知らせの投稿を確定
+Route::post('/courses/{course}/announcements', [AnnouncementController::class, 'store'])
+    ->name('announcements.store');
 
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\TimetableEntry;
 use Illuminate\Http\Request;
 
 class CourseController extends Controller
@@ -63,11 +64,35 @@ class CourseController extends Controller
         // タグを取得
         $course->load('tags');
 
+        // ログイン中のユーザーが教務課かどうか
+        $isAdmin = (bool) auth()->user()->is_admin;
+
+        // この授業の履修が承認されているか確認
+        $isApprovedStudent = TimetableEntry::where('course_id', $course->id)
+            ->where('user_id', auth()->id())
+            ->where('status', 'approved')
+            ->exists();
+
+        // お知らせを閲覧できるか
+        $canViewAnnouncements = $isAdmin || $isApprovedStudent;
+
+        // 過去30日間のお知らせを取得
+        $announcements = $canViewAnnouncements
+            ? $course->announcements()
+                ->with('user')
+                ->where('created_at', '>=', now()->subDays(30))
+                ->latest()
+                ->get()
+            : collect();
+
         return view('courses.show', [
             'course' => $course,
             'reviews' => $reviews,
             'students' => $students,
             'studentCount' => $studentCount,
+            'isAdmin' => $isAdmin,
+            'canViewAnnouncements' => $canViewAnnouncements,
+            'announcements' => $announcements,
         ]);
     }
 }

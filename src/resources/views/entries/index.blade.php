@@ -31,46 +31,116 @@
 
         </div>
 
-<!-- 履修申請・管理者ボタン・全削除 -->
-<div class="flex justify-between items-center mb-6">
 
-    <!-- 左側のボタン -->
-    <div class="flex items-center gap-3">
+        <!-- 授業からのお知らせ -->
+        @if($announcements->isNotEmpty())
 
-        <!-- 履修申請ボタン -->
-        <a href="/entries/create"
-           class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-            ＋ 履修申請する
-        </a>
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
 
-        <!-- 管理者だけに表示するボタン -->
-        @can('access-admin')
-            <a href="{{ route('admin.entries') }}"
-               class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded shadow">
-                👑 履修申請を管理する
-            </a>
-        @endcan
+                <h2 class="text-2xl font-bold mb-5">
+                    📢 授業からのお知らせ
+                </h2>
 
-    </div>
+                @foreach($announcements as $announcement)
 
-    <!-- 全削除ボタン -->
-    @if($entries->isNotEmpty())
+                    <div class="border-b pb-5 mb-5
+                                {{ $loop->first ? '' : 'hidden announcement-extra' }}">
 
-        <form action="/entries" method="POST">
-            @csrf
-            @method('DELETE')
+                        <!-- 授業名 -->
+                        <p class="text-blue-600 font-bold mb-2">
 
-            <button
-                type="submit"
-                onclick="return confirm('本当にすべての履修申請を削除しますか？この操作は取り消せません。')"
-                class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
-                全削除
-            </button>
-        </form>
+                            <a href="{{ route('courses.show', $announcement->course_id) }}"
+                               class="hover:underline">
+                                {{ $announcement->course->name }}
+                            </a>
 
-    @endif
+                        </p>
 
-</div>
+                        <!-- タイトル -->
+                        <h3 class="text-lg font-bold mb-2">
+                            {{ $announcement->title }}
+                        </h3>
+
+                        <!-- 本文 -->
+                        <p class="text-gray-700 whitespace-pre-line break-words">{{ $announcement->body }}</p>
+
+                        <!-- 投稿者 -->
+                        <p class="text-gray-500 text-sm mt-3">
+                            投稿者：
+                            {{ $announcement->user?->name ?? '削除済みユーザー' }}
+                        </p>
+
+                        <!-- 投稿日 -->
+                        <p class="text-gray-400 text-sm mt-1">
+                            投稿日：
+                            {{ $announcement->created_at->format('Y/m/d H:i') }}
+                        </p>
+
+                    </div>
+
+                @endforeach
+
+                <!-- お知らせが2件以上ある場合だけ表示 -->
+                @if($announcements->count() > 1)
+
+                    <button
+                        type="button"
+                        id="toggleAnnouncements"
+                        onclick="toggleAnnouncements()"
+                        class="text-blue-600 font-bold hover:underline">
+
+                        すべて見る ▼
+
+                    </button>
+
+                @endif
+
+            </div>
+
+        @endif
+
+
+        <!-- 履修申請・管理者ボタン・全削除 -->
+        <div class="flex justify-between items-center mb-6">
+
+            <!-- 左側のボタン -->
+            <div class="flex items-center gap-3">
+
+                <!-- 履修申請ボタン -->
+                <a href="/entries/create"
+                   class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                    ＋ 履修申請する
+                </a>
+
+                <!-- 管理者だけに表示するボタン -->
+                @can('access-admin')
+                    <a href="{{ route('admin.entries') }}"
+                       class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded shadow">
+                        👑 履修申請を管理する
+                    </a>
+                @endcan
+
+            </div>
+
+            <!-- 全削除ボタン -->
+            @if($entries->isNotEmpty())
+
+                <form action="/entries" method="POST">
+                    @csrf
+                    @method('DELETE')
+
+                    <button
+                        type="submit"
+                        onclick="return confirm('本当にすべての履修申請を削除しますか？この操作は取り消せません。')"
+                        class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
+                        全削除
+                    </button>
+                </form>
+
+            @endif
+
+        </div>
+
 
         <!-- 登録件数 -->
         <div class="bg-white p-4 rounded-lg shadow mb-6">
@@ -85,6 +155,7 @@
 
         </div>
 
+
         <!-- 登録完了メッセージ -->
         @if(session('success'))
 
@@ -93,6 +164,7 @@
             </div>
 
         @endif
+
 
         <!-- 時間割 -->
         @if($entries->isEmpty())
@@ -238,6 +310,29 @@
         @endif
 
     </div>
+
+
+    <!-- お知らせの表示・非表示 -->
+    <script>
+        function toggleAnnouncements() {
+            const announcements = document.querySelectorAll('.announcement-extra');
+            const button = document.getElementById('toggleAnnouncements');
+
+            if (!announcements.length || !button) {
+                return;
+            }
+
+            const isHidden = announcements[0].classList.contains('hidden');
+
+            announcements.forEach(announcement => {
+                announcement.classList.toggle('hidden');
+            });
+
+            button.textContent = isHidden
+                ? '閉じる ▲'
+                : 'すべて見る ▼';
+        }
+    </script>
 
 </body>
 </html>

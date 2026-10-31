@@ -33,4 +33,10 @@ class Course extends Model
     {
         return $this->hasMany(Favorite::class);
     }
+
+    // 授業に投稿されたお知らせを取得する（Week11追加）
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
+    }
 }

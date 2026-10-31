@@ -17,6 +17,13 @@
             ← 授業一覧に戻る
         </a>
 
+        <!-- 投稿成功メッセージ -->
+        @if(session('success'))
+            <div class="bg-green-100 text-green-700 p-4 rounded-lg mt-6 mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
+
         <!-- 授業情報 -->
         <div class="bg-white p-6 rounded-lg shadow mt-6 mb-6">
 
@@ -54,6 +61,140 @@
 
         </div>
 
+        <!-- 教務課のお知らせ投稿フォーム -->
+        @if($isAdmin)
+
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+
+                <h2 class="text-2xl font-bold mb-4">
+                    📢 お知らせを投稿する
+                </h2>
+
+                <p class="text-gray-500 mb-4">
+                    この授業の履修が承認された学生にお知らせを送信します。
+                </p>
+
+                <!-- お知らせのエラーメッセージ -->
+                @php
+                    $announcementErrors = [];
+
+                    foreach (['announcement', 'title', 'body', 'submission_token', 'token'] as $field) {
+                        foreach ($errors->get($field) as $message) {
+                            $announcementErrors[] = $message;
+                        }
+                    }
+                @endphp
+
+                @if(count($announcementErrors) > 0)
+
+                    <div class="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
+
+                        @foreach($announcementErrors as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+
+                    </div>
+
+                @endif
+
+                <form action="{{ route('announcements.confirm', $course) }}"
+                      method="POST">
+
+                    @csrf
+
+                    <!-- 二重投稿防止用トークン -->
+                    <input type="hidden"
+                           name="submission_token"
+                           value="{{ old('submission_token', \Illuminate\Support\Str::random(40)) }}">
+
+                    <!-- タイトル -->
+                    <label class="block font-bold mb-2">
+                        タイトル
+                    </label>
+
+                    <input type="text"
+                           name="title"
+                           maxlength="50"
+                           value="{{ old('title') }}"
+                           class="w-full border rounded p-3 mb-4"
+                           placeholder="お知らせのタイトル"
+                           required>
+
+                    <!-- 本文 -->
+                    <label class="block font-bold mb-2">
+                        本文
+                    </label>
+
+                    <textarea name="body"
+                              rows="5"
+                              maxlength="500"
+                              class="w-full border rounded p-3 mb-4"
+                              placeholder="お知らせの内容"
+                              required>{{ old('body') }}</textarea>
+
+                    <!-- 投稿確認ボタン -->
+                    <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+
+                        投稿内容を確認する
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        @endif
+
+        <!-- お知らせ一覧 -->
+        @if($canViewAnnouncements && $announcements->isNotEmpty())
+
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+
+                <h2 class="text-2xl font-bold mb-4">
+                    📢 お知らせ一覧
+                </h2>
+
+                <div class="space-y-5">
+
+                    @foreach($announcements as $announcement)
+
+                        <div class="border-b pb-5">
+
+                            <!-- 授業名 -->
+                            <p class="text-sm text-blue-600 font-bold mb-2">
+                                {{ $course->name }}
+                            </p>
+
+                            <!-- タイトル -->
+                            <h3 class="text-lg font-bold mb-2">
+                                {{ $announcement->title }}
+                            </h3>
+
+                            <!-- 本文 -->
+                            <p class="text-gray-700 whitespace-pre-wrap break-words">{{ $announcement->body }}</p>
+
+                            <!-- 投稿者 -->
+                            <p class="text-sm text-gray-500 mt-3">
+                                投稿者：
+                                {{ $announcement->user?->name ?? '削除済みユーザー' }}
+                            </p>
+
+                            <!-- 投稿日 -->
+                            <p class="text-sm text-gray-400 mt-1">
+                                投稿日：
+                                {{ $announcement->created_at->format('Y/m/d H:i') }}
+                            </p>
+
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+            </div>
+
+        @endif
 
         <!-- 履修者一覧 -->
         <div class="bg-white p-6 rounded-lg shadow mb-6">
@@ -98,7 +239,6 @@
 
         </div>
 
-
         <!-- レビュー投稿 -->
         <div class="bg-white p-6 rounded-lg shadow mb-6">
 
@@ -106,24 +246,23 @@
                 ⭐ レビューを書く
             </h2>
 
-            <!-- 投稿成功メッセージ -->
-            @if(session('success'))
+            <!-- レビューのエラーメッセージ -->
+            @php
+                $reviewErrors = [];
 
-                <p class="bg-green-100 text-green-700 p-3 rounded mb-4">
-                    {{ session('success') }}
-                </p>
+                foreach (['rating', 'comment', 'review'] as $field) {
+                    foreach ($errors->get($field) as $message) {
+                        $reviewErrors[] = $message;
+                    }
+                }
+            @endphp
 
-            @endif
-
-            <!-- エラーメッセージ -->
-            @if($errors->any())
+            @if(count($reviewErrors) > 0)
 
                 <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
 
-                    @foreach($errors->all() as $error)
-
+                    @foreach($reviewErrors as $error)
                         <p>{{ $error }}</p>
-
                     @endforeach
 
                 </div>
@@ -186,7 +325,6 @@
 
         </div>
 
-
         <!-- レビュー一覧 -->
         <div class="bg-white p-6 rounded-lg shadow">
 
@@ -214,9 +352,7 @@
                     </div>
 
                     <!-- コメント -->
-                    <p class="text-gray-700 whitespace-pre-wrap">
-                        {{ $review->comment }}
-                    </p>
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ $review->comment }}</p>
 
                     <!-- 投稿日 -->
                     <p class="text-gray-400 text-sm mt-2">
