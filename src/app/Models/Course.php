@@ -10,6 +10,11 @@ class Course extends Model
 {
     public $timestamps = false;
 
+    protected $casts = [
+    'application_deadline' => 'datetime',
+    'lottery_completed_at' => 'datetime',
+];
+
     // 授業に登録されている時間割を取得する
     public function timetableEntries(): HasMany
     {
