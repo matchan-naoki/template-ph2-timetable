@@ -7,332 +7,334 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 p-8">
+<body class="bg-gray-100 p-4 md:p-8">
+<div class="max-w-6xl mx-auto">
 
-    <div class="max-w-6xl mx-auto">
+    <!-- タイトル・ログアウト -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <h1 class="text-3xl font-bold">自分の時間割</h1>
 
-        <!-- タイトル・ログアウト -->
-        <div class="flex justify-between items-center mb-6">
-
-            <h1 class="text-3xl font-bold">
-                自分の時間割
-            </h1>
-
-            <form action="/logout" method="POST">
-                @csrf
-
-                <button
-                    type="submit"
+        <form action="/logout" method="POST">
+            @csrf
+            <button type="submit"
                     onclick="return confirm('ログアウトしますか？')"
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
-                    ログアウト
-                </button>
-            </form>
+                ログアウト
+            </button>
+        </form>
+    </div>
 
-        </div>
+    <!-- 授業からのお知らせ -->
+    @if($announcements->isNotEmpty())
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-2xl font-bold mb-5">
+                📢 授業からのお知らせ
+            </h2>
 
+            @foreach($announcements as $announcement)
+                <div class="border-b pb-5 mb-5 {{ $loop->first ? '' : 'hidden announcement-extra' }}">
 
-        <!-- 授業からのお知らせ -->
-        @if($announcements->isNotEmpty())
+                    <p class="text-blue-600 font-bold mb-2">
+                        <a href="{{ route('courses.show', $announcement->course_id) }}"
+                           class="hover:underline">
+                            {{ $announcement->course->name }}
+                        </a>
+                    </p>
 
-            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-lg font-bold mb-2">
+                        {{ $announcement->title }}
+                    </h3>
 
-                <h2 class="text-2xl font-bold mb-5">
-                    📢 授業からのお知らせ
-                </h2>
+                    <p class="text-gray-700 whitespace-pre-line break-words">{{ $announcement->body }}</p>
 
-                @foreach($announcements as $announcement)
+                    <p class="text-gray-500 text-sm mt-3">
+                        投稿者：
+                        {{ $announcement->user?->name ?? '削除済みユーザー' }}
+                    </p>
 
-                    <div class="border-b pb-5 mb-5
-                                {{ $loop->first ? '' : 'hidden announcement-extra' }}">
+                    <p class="text-gray-400 text-sm mt-1">
+                        投稿日：
+                        {{ $announcement->created_at->format('Y/m/d H:i') }}
+                    </p>
+                </div>
+            @endforeach
 
-                        <!-- 授業名 -->
-                        <p class="text-blue-600 font-bold mb-2">
-
-                            <a href="{{ route('courses.show', $announcement->course_id) }}"
-                               class="hover:underline">
-                                {{ $announcement->course->name }}
-                            </a>
-
-                        </p>
-
-                        <!-- タイトル -->
-                        <h3 class="text-lg font-bold mb-2">
-                            {{ $announcement->title }}
-                        </h3>
-
-                        <!-- 本文 -->
-                        <p class="text-gray-700 whitespace-pre-line break-words">{{ $announcement->body }}</p>
-
-                        <!-- 投稿者 -->
-                        <p class="text-gray-500 text-sm mt-3">
-                            投稿者：
-                            {{ $announcement->user?->name ?? '削除済みユーザー' }}
-                        </p>
-
-                        <!-- 投稿日 -->
-                        <p class="text-gray-400 text-sm mt-1">
-                            投稿日：
-                            {{ $announcement->created_at->format('Y/m/d H:i') }}
-                        </p>
-
-                    </div>
-
-                @endforeach
-
-                <!-- お知らせが2件以上ある場合だけ表示 -->
-                @if($announcements->count() > 1)
-
-                    <button
-                        type="button"
+            @if($announcements->count() > 1)
+                <button type="button"
                         id="toggleAnnouncements"
                         onclick="toggleAnnouncements()"
                         class="text-blue-600 font-bold hover:underline">
+                    すべて見る ▼
+                </button>
+            @endif
+        </div>
+    @endif
 
-                        すべて見る ▼
+    <!-- 今学期の単位チェック -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
 
-                    </button>
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <h2 class="text-2xl font-bold">
+                📚 今学期の単位チェック
+            </h2>
 
-                @endif
+            @if($isOverLimit)
+                <span class="bg-red-100 text-red-700 font-bold px-4 py-2 rounded-full text-sm">
+                    ⚠️ 上限超過
+                </span>
+            @else
+                <span class="bg-green-100 text-green-700 font-bold px-4 py-2 rounded-full text-sm">
+                    ✅ 上限以内
+                </span>
+            @endif
+        </div>
 
+        <p class="text-gray-600 mb-2">
+            承認済みの単位数
+        </p>
+
+        <div class="flex items-baseline gap-2 mb-5">
+            <span class="text-4xl font-bold text-blue-600">
+                {{ $totalCredits }}
+            </span>
+
+            <span class="text-xl text-gray-500">
+                / {{ $creditLimit }} 単位
+            </span>
+        </div>
+
+        <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+            <div class="{{ $isOverLimit ? 'bg-red-500' : 'bg-blue-500' }} h-4 rounded-full"
+                 style="width: {{ $creditLimit > 0 ? min(($totalCredits / $creditLimit) * 100, 100) : 0 }}%;">
             </div>
+        </div>
 
+        @if($isOverLimit)
+            <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+                <p class="font-bold">
+                    ⚠️ 単位上限を超えています！
+                </p>
+                <p class="mt-2">
+                    上限より {{ $totalCredits - $creditLimit }} 単位多くなっています。
+                </p>
+            </div>
+        @else
+            <div class="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+                <p class="font-bold">
+                    ✅ 単位上限以内です！
+                </p>
+                <p class="mt-2">
+                    あと {{ $creditLimit - $totalCredits }} 単位まで履修できます。
+                </p>
+            </div>
         @endif
 
+        <p class="text-sm text-gray-500 mt-4">
+            ※承認済みの授業のみ単位数に含まれます。申請中・却下された授業は含まれません。
+        </p>
+    </div>
 
-        <!-- 履修申請・管理者ボタン・全削除 -->
-        <div class="flex justify-between items-center mb-6">
+    <!-- 履修申請・教室予約・管理者ボタン -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
 
-            <!-- 左側のボタン -->
-            <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
 
-                <!-- 履修申請ボタン -->
-                <a href="/entries/create"
-                   class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                    ＋ 履修申請する
+@cannot('access-admin')
+    <a href="/entries/create"
+       class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+        ＋ 履修申請する
+    </a>
+@endcannot
+
+            <a href="{{ route('room-reservations.index') }}"
+               class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded">
+                🏫 教室を予約する
+            </a>
+
+            @can('access-admin')
+                <a href="{{ route('admin.entries') }}"
+                   class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded shadow">
+                    👑 履修申請を管理する
                 </a>
+            @endcan
 
-                <!-- 管理者だけに表示するボタン -->
-                @can('access-admin')
-                    <a href="{{ route('admin.entries') }}"
-                       class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded shadow">
-                        👑 履修申請を管理する
-                    </a>
-                @endcan
+        </div>
 
-            </div>
+        @if($entries->isNotEmpty())
+            <form action="/entries" method="POST">
+                @csrf
+                @method('DELETE')
 
-            <!-- 全削除ボタン -->
-            @if($entries->isNotEmpty())
-
-                <form action="/entries" method="POST">
-                    @csrf
-                    @method('DELETE')
-
-                    <button
-                        type="submit"
+                <button type="submit"
                         onclick="return confirm('本当にすべての履修申請を削除しますか？この操作は取り消せません。')"
                         class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">
-                        全削除
-                    </button>
-                </form>
-
-            @endif
-
-        </div>
-
-
-        <!-- 登録件数 -->
-        <div class="bg-white p-4 rounded-lg shadow mb-6">
-
-            <p class="text-gray-600">
-                履修申請している授業
-            </p>
-
-            <p class="text-2xl font-bold text-blue-600">
-                {{ $entries->count() }} 件
-            </p>
-
-        </div>
-
-
-        <!-- 登録完了メッセージ -->
-        @if(session('success'))
-
-            <div class="bg-green-100 text-green-700 p-4 rounded mb-6">
-                {{ session('success') }}
-            </div>
-
-        @endif
-
-
-        <!-- 時間割 -->
-        @if($entries->isEmpty())
-
-            <p class="bg-white p-6 rounded shadow">
-                まだ履修申請している授業がありません
-            </p>
-
-        @else
-
-            <div class="overflow-x-auto bg-white rounded-lg shadow">
-
-                <table class="w-full border-collapse">
-
-                    <thead>
-                        <tr class="bg-blue-100">
-
-                            <th class="border p-3">曜日</th>
-                            <th class="border p-3">時限</th>
-                            <th class="border p-3">授業名</th>
-                            <th class="border p-3">担当教員</th>
-                            <th class="border p-3">教室</th>
-                            <th class="border p-3">履修人数</th>
-                            <th class="border p-3">申請状況</th>
-                            <th class="border p-3">操作</th>
-
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        @foreach($entries as $entry)
-
-                            <tr class="hover:bg-gray-50">
-
-                                <!-- 曜日 -->
-                                <td class="border p-3 text-center">
-                                    {{ ['月', '火', '水', '木', '金'][$entry->course->day - 1] }}
-                                </td>
-
-                                <!-- 時限 -->
-                                <td class="border p-3 text-center">
-                                    {{ $entry->course->period }}限
-                                </td>
-
-                                <!-- 授業名 -->
-                                <td class="border p-3">
-
-                                    <a href="{{ route('courses.show', $entry->course_id) }}"
-                                       class="text-blue-600 font-bold hover:underline">
-
-                                        {{ $entry->course->name }}
-
-                                    </a>
-
-                                </td>
-
-                                <!-- 担当教員 -->
-                                <td class="border p-3 text-center">
-                                    {{ $entry->course->teacher ?? '未定' }}
-                                </td>
-
-                                <!-- 教室 -->
-                                <td class="border p-3 text-center">
-                                    {{ $entry->course->room ?? '教室未定' }}
-                                </td>
-
-                                <!-- 履修人数 -->
-                                <td class="border p-3 text-center">
-
-                                    <a href="{{ route('courses.show', $entry->course_id) }}"
-                                       class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200">
-
-                                        👥 {{ $entry->course->timetable_entries_count }}人
-
-                                    </a>
-
-                                </td>
-
-                                <!-- 申請状況 -->
-                                <td class="border p-3 text-center">
-
-                                    @if($entry->status === 'pending')
-
-                                        <span class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
-                                            🟡 申請中
-                                        </span>
-
-                                    @elseif($entry->status === 'approved')
-
-                                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
-                                            🟢 承認済み
-                                        </span>
-
-                                    @elseif($entry->status === 'rejected')
-
-                                        <span class="inline-block bg-red-100 text-red-800 px-3 py-1 rounded-full font-bold whitespace-nowrap">
-                                            🔴 却下
-                                        </span>
-
-                                    @else
-
-                                        <span class="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-bold whitespace-nowrap">
-                                            状態不明
-                                        </span>
-
-                                    @endif
-
-                                </td>
-
-                                <!-- 削除ボタン -->
-                                <td class="border p-3 text-center">
-
-                                    <form action="/entries/{{ $entry->id }}"
-                                          method="POST">
-
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button
-                                            type="submit"
-                                            onclick="return confirm('この履修申請を削除しますか？')"
-                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-
-                                            削除
-
-                                        </button>
-
-                                    </form>
-
-                                </td>
-
-                            </tr>
-
-                        @endforeach
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+                    全削除
+                </button>
+            </form>
         @endif
 
     </div>
 
+    <!-- 履修申請件数 -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+        <p class="text-gray-600">
+            履修申請している授業
+        </p>
+        <p class="text-2xl font-bold text-blue-600">
+            {{ $entries->count() }} 件
+        </p>
+    </div>
 
-    <!-- お知らせの表示・非表示 -->
-    <script>
-        function toggleAnnouncements() {
-            const announcements = document.querySelectorAll('.announcement-extra');
-            const button = document.getElementById('toggleAnnouncements');
+    <!-- 完了メッセージ -->
+    @if(session('success'))
+        <div class="bg-green-100 text-green-700 p-4 rounded mb-6">
+            {{ session('success') }}
+        </div>
+    @endif
 
-            if (!announcements.length || !button) {
-                return;
-            }
+    <!-- 時間割 -->
+    @if($entries->isEmpty())
 
-            const isHidden = announcements[0].classList.contains('hidden');
+        <p class="bg-white p-6 rounded shadow">
+            まだ履修申請している授業がありません
+        </p>
 
-            announcements.forEach(announcement => {
-                announcement.classList.toggle('hidden');
-            });
+    @else
 
-            button.textContent = isHidden
-                ? '閉じる ▲'
-                : 'すべて見る ▼';
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="w-full border-collapse">
+
+                <thead>
+                    <tr class="bg-blue-100">
+                        <th class="border p-3">曜日</th>
+                        <th class="border p-3">時限</th>
+                        <th class="border p-3">授業名</th>
+                        <th class="border p-3">担当教員</th>
+                        <th class="border p-3">教室</th>
+                        <th class="border p-3">履修人数</th>
+                        <th class="border p-3">申請状況</th>
+                        <th class="border p-3">操作</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach($entries as $entry)
+                        <tr class="hover:bg-gray-50">
+
+                            <!-- 曜日 -->
+                            <td class="border p-3 text-center">
+                                {{ ['月', '火', '水', '木', '金'][$entry->course->day - 1] ?? '未定' }}
+                            </td>
+
+                            <!-- 時限 -->
+                            <td class="border p-3 text-center">
+                                {{ $entry->course->period }}限
+                            </td>
+
+                            <!-- 授業名・必修マーク -->
+                            <td class="border p-3">
+                                <a href="{{ route('courses.show', $entry->course_id) }}"
+                                   class="text-blue-600 font-bold hover:underline">
+                                    {{ $entry->course->name }}
+                                </a>
+
+                                @if($entry->course->required)
+                                    <span class="inline-block ml-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
+                                        必修
+                                    </span>
+                                @endif
+                            </td>
+
+                            <!-- 担当教員 -->
+                            <td class="border p-3 text-center">
+                                {{ $entry->course->teacher ?? '未定' }}
+                            </td>
+
+                            <!-- 教室 -->
+                            <td class="border p-3 text-center">
+                                {{ $entry->course->room ?? '教室未定' }}
+                            </td>
+
+                            <!-- 履修人数 -->
+                            <td class="border p-3 text-center">
+                                <a href="{{ route('courses.show', $entry->course_id) }}"
+                                   class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200">
+                                    👥 {{ $entry->course->timetable_entries_count }}人
+                                </a>
+                            </td>
+
+                            <!-- 申請状況 -->
+                            <td class="border p-3 text-center">
+                                @if($entry->status === 'approved')
+                                    <span class="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                                        🟢 承認済み
+                                    </span>
+                                @elseif($entry->status === 'pending')
+                                    <span class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                                        🟡 申請中
+                                    </span>
+                                @elseif($entry->status === 'rejected')
+                                    <span class="inline-block bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                                        🔴 却下
+                                    </span>
+                                @else
+                                    <span class="text-gray-500">
+                                        不明
+                                    </span>
+                                @endif
+                            </td>
+
+                            <!-- 操作 -->
+                            <td class="border p-3 text-center">
+                                @if($entry->course->required)
+                                    <span class="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                                        🔒 必修・削除不可
+                                    </span>
+                                @else
+                                    <form action="/entries/{{ $entry->id }}" method="POST">
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button type="submit"
+                                                onclick="return confirm('この履修申請を削除しますか？')"
+                                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                                            削除
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
+
+                        </tr>
+                    @endforeach
+                </tbody>
+
+            </table>
+        </div>
+
+    @endif
+
+</div>
+
+<script>
+    function toggleAnnouncements() {
+        const announcements = document.querySelectorAll('.announcement-extra');
+        const button = document.getElementById('toggleAnnouncements');
+
+        if (!announcements.length || !button) {
+            return;
         }
-    </script>
+
+        const isHidden = announcements[0].classList.contains('hidden');
+
+        announcements.forEach(announcement => {
+            announcement.classList.toggle('hidden');
+        });
+
+        button.textContent = isHidden
+            ? '閉じる ▲'
+            : 'すべて見る ▼';
+    }
+</script>
 
 </body>
 </html>
